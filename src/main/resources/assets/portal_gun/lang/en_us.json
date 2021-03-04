@@ -1,0 +1,7 @@
+{
+    "item.portal_gun.portal_gun": "Portal Gun",
+    "item.portal_gun.portal_gun.changed_color": "Color changed to: ",
+    "item.portal_gun.portal_gun.portals_reset": "Existing Portals Cleared",
+    "key.portal_gun.change_color": "Change Selected Color",
+    "key.portal_gun.reset_portals": "Clear Existing Portals"
+}

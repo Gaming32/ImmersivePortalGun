@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "portal_gun",
-  "version": "${version}",
+  "version": "1.0.0",
 
   "name": "Portal Gun",
   "description": "This is a Portal Gun for the Immersive Portals mod",
@@ -9,12 +9,12 @@
     "Gaming32"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
+    "homepage": "https://github.com/gaming32/ImmersivePortalGun",
     "sources": "https://github.com/gaming32/ImmersivePortalGun"
   },
 
   "license": "MIT",
-  "icon": "assets/modid/icon.png",
+  "icon": "assets/portal_gun/icon.png",
 
   "environment": "*",
   "entrypoints": {
@@ -29,7 +29,9 @@
   "depends": {
     "fabricloader": ">=0.7.4",
     "fabric": "*",
-    "minecraft": "1.16.x"
+    "minecraft": "1.16.x",
+    "imm_ptl_core": "*",
+    "fabric-key-binding-api-v1": "*"
   },
   "suggests": {
     "another-mod": "*"
