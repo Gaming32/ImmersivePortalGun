@@ -153,23 +153,6 @@ public class PortalGunItem extends Item {
         player.sendMessage(new TranslatableText("item.portal_gun.portal_gun.portals_reset"), true);
     }
 
-    // private Vec3d getOffset(BlockPos position, Direction direction) {
-    //     switch (direction) {
-    //         case UP:
-    //             return new Vec3d(0.5, 1, 0.5);
-    //         case DOWN:
-    //             return new Vec3d(0.5, 0, 0.5);
-    //         case NORTH:
-    //             return new Vec3d(0.5, 0.5, 1);
-    //         case SOUTH:
-    //             return new Vec3d(0.5, 0.5, 0);
-    //         case EAST:
-    //             return new Vec3d()
-    //     }
-    // }
-
-    // private Vec3d[] getRotation
-
     private Portal createPortal(CompoundTag gun, World world, Marker portalPos) {
         if (portalPos.side == Direction.DOWN || portalPos.side == Direction.UP) return null;
         Portal portal = Portal.entityType.create(world);
@@ -202,7 +185,6 @@ public class PortalGunItem extends Item {
     private void updatePortal(Portal portal, Portal other) {
         portal.setDestinationDimension(other.getOriginDim());
         portal.setDestination(other.getOriginPos());
-        // System.out.println(portal.axisH.());
         Direction portalFacing = portalFacing(portal.axisW);
         Direction otherFacing = portalFacing(other.axisW);
         float angle = getAngle(portalFacing) + getAngle(otherFacing);
@@ -226,15 +208,6 @@ public class PortalGunItem extends Item {
         if (portal2 == null) return;
         updatePortal(portal1, portal2);
         updatePortal(portal2, portal1);
-        // if (portal1Pos.side == Direction.DOWN || portal1Pos.side == Direction.UP) return;
-        // if (portal2Pos.side == Direction.DOWN || portal2Pos.side == Direction.UP) return;
-        // Portal portal1 = Portal.entityType.create(world);
-        // Vec3d unitVec = new Vec3d(portal1Pos.side.getUnitVector());
-        // portal1.setOriginPos(Vec3d.ofCenter(portal1Pos.position).add(unitVec.multiply(0.5001).subtract(new Vec3d(0, 0.5, 0))));
-        // portal1.setDestinationDimension(World.NETHER);
-        // portal1.setDestination(Vec3d.ofCenter(portal1Pos.position).multiply(1/8));
-        // portal1.setOrientationAndSize(unitVec.rotateY((float)(0.5*Math.PI)), new Vec3d(0, 1, 0), 1, 2);
-        // portal1.world.spawnEntity(portal1);
     }
 
     public void inShootGun(ServerPlayerEntity player, Marker hit) {
@@ -296,9 +269,6 @@ public class PortalGunItem extends Item {
         }
 
         BlockHitResult blockHit = (BlockHitResult)hit;
-        // System.out.println(blockHit.getBlockPos());
-        // System.out.println(blockHit.getSide());
-        // System.out.println(playerEntity.getHorizontalFacing());
         shootGun(blockHit, playerEntity);
 
         return TypedActionResult.success(thisGun);
