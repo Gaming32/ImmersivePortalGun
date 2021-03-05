@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "portal_gun",
-  "version": "1.0.0",
+  "version": "0.1.0",
 
   "name": "Portal Gun",
   "description": "This is a Portal Gun for the Immersive Portals mod",
