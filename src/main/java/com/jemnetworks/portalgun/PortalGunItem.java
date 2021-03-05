@@ -202,6 +202,9 @@ public class PortalGunItem extends Item {
 
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
+        if (playerEntity.getClass() != ClientPlayerEntity.class)
+            return TypedActionResult.fail(playerEntity.getStackInHand(hand));
+
         MinecraftClient client = MinecraftClient.getInstance();
         ItemStack thisGun = playerEntity.getStackInHand(hand);
 
