@@ -1,7 +1,8 @@
 package com.jemnetworks.portalgun;
 
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.hit.BlockHitResult;
 
 public class PortalGunItemRemoteCallable {
     public static void switchColor(ServerPlayerEntity player) {
@@ -16,7 +17,7 @@ public class PortalGunItemRemoteCallable {
         PortalGunMod.PORTAL_GUN_ITEM.inResetPortals(player, PortalGunMod.holdingGun(player).getTag());
     }
 
-    // public static void shootGun(ServerPlayerEntity player, BlockHitResult hit) {
-    //     PortalGunMod.PORTAL_GUN_ITEM.inShootGun(player, PortalGunMod.holdingGun(player).getTag());
-    // }
+    public static void shootGun(ServerPlayerEntity player, CompoundTag hit) {
+        PortalGunMod.PORTAL_GUN_ITEM.inShootGun(player, PortalGunMod.PORTAL_GUN_ITEM.getMarkerDirect(hit));
+    }
 }

@@ -29,6 +29,14 @@ public class PortalGunItem extends Item {
             this.side = side;
             this.playerDirection = playerDirection;
         }
+
+        public String toString() {
+            return "{Marker"
+                 + " position=" + this.position
+                 + " side=" + this.side
+                 + " playerDirection=" + this.playerDirection
+                 + "}";
+        }
     }
 
     public PortalGunItem() {
@@ -38,25 +46,42 @@ public class PortalGunItem extends Item {
         );
     }
 
-    private void newGun(ItemStack stack, World world, PlayerEntity player) {
+    private void newGun(ItemStack stack, PlayerEntity player) {
         CompoundTag dataTag = stack.getOrCreateTag();
         dataTag.putBoolean("color", false);
         dataTag.putByte("state", (byte)0);
         System.out.println("New portal gun!");
     }
 
-    private void putMarker(CompoundTag tag, String key, BlockHitResult info, Direction playerDirection) {
+    private void putMarkerDirect(CompoundTag tag, BlockHitResult info, Direction playerDirection) {
+        tag.putInt("x", info.getBlockPos().getX());
+        tag.putInt("y", info.getBlockPos().getY());
+        tag.putInt("z", info.getBlockPos().getZ());
+        tag.putInt("blockDirection",  info.getSide().getId());
+        tag.putInt("playerDirection", playerDirection.getId());
+    }
+
+    private void putMarkerDirect(CompoundTag tag, Marker marker) {
+        tag.putInt("x", marker.position.getX());
+        tag.putInt("y", marker.position.getY());
+        tag.putInt("z", marker.position.getZ());
+        tag.putInt("blockDirection",  marker.side.getId());
+        tag.putInt("playerDirection", marker.playerDirection.getId());
+    }
+
+    private void putMarker(CompoundTag tag, String key, Marker marker) {
         CompoundTag newTag = new CompoundTag();
-        newTag.putInt("x", info.getBlockPos().getX());
-        newTag.putInt("y", info.getBlockPos().getY());
-        newTag.putInt("z", info.getBlockPos().getZ());
-        newTag.putInt("blockDirection",  info.getSide().getId());
-        newTag.putInt("playerDirection", playerDirection.getId());
+        putMarkerDirect(newTag, marker);
         tag.put(key, newTag);
     }
 
-    private Marker getMarker(CompoundTag tag, String key) {
-        CompoundTag vector = tag.getCompound(key);
+    private void putMarker(CompoundTag tag, String key, BlockHitResult info, Direction playerDirection) {
+        CompoundTag newTag = new CompoundTag();
+        putMarkerDirect(newTag, info, playerDirection);
+        tag.put(key, newTag);
+    }
+
+    public Marker getMarkerDirect(CompoundTag vector) {
         return new Marker(
             new BlockPos(
                 vector.getInt("x"),
@@ -66,6 +91,11 @@ public class PortalGunItem extends Item {
             Direction.byId(vector.getInt("blockDirection")),
             Direction.byId(vector.getInt("playerDirection"))
         );
+    }
+
+    private Marker getMarker(CompoundTag tag, String key) {
+        CompoundTag vector = tag.getCompound(key);
+        return getMarkerDirect(vector);
     }
 
     private void inSwitchColor(CompoundTag gun, boolean newColor) {
@@ -120,27 +150,35 @@ public class PortalGunItem extends Item {
         player.sendMessage(new TranslatableText("item.portal_gun.portal_gun.portals_reset"), true);
     }
 
-    private void createPortal(CompoundTag gun, BlockHitResult hit, Direction playerDirection, Marker marker) {
-
+    private void createPortal(CompoundTag gun, Marker portal1, Marker portal2, Direction playerDirection) {
+        
     }
 
-    public void inShootGun(PlayerEntity player, CompoundTag gun, BlockHitResult hit) {
+    public void inShootGun(ServerPlayerEntity player, Marker hit) {
+        ItemStack gunItem = PortalGunMod.holdingGun(player);
+        if (gunItem == null) {
+            PortalGunMod.LOGGER.error("Player used non-existent portal gun!");
+            return;
+        }
+        if (!gunItem.hasTag())
+            newGun(gunItem, player);
+        CompoundTag gun = gunItem.getTag();
         Direction playerDirection = player.getHorizontalFacing();
         boolean color = gun.getBoolean("color");
         switch (gun.getByte("state")) {
             case (byte)0:
                 gun.putBoolean("markerColor", color);
-                putMarker(gun, "marker", hit, playerDirection);
+                putMarker(gun, "marker", hit);
                 gun.putByte("state", (byte)1);
                 break;
             case (byte)1:
                 boolean markerColor = gun.getBoolean("markerColor");
                 if (markerColor == color) {
                     gun.putBoolean("markerColor", color);
-                    putMarker(gun, "marker", hit, playerDirection);
+                    putMarker(gun, "marker", hit);
                 }
                 else {
-                    createPortal(gun, hit, playerDirection, getMarker(gun, "marker"));
+                    createPortal(gun, hit, getMarker(gun, "marker"), playerDirection);
                     gun.putByte("state", (byte)2);
                 }
                 break;
@@ -153,16 +191,19 @@ public class PortalGunItem extends Item {
         switchColor((ServerPlayerEntity)player, gun);
     }
 
-    private void shootGun(CompoundTag gun, BlockHitResult hit, PlayerEntity player) {
-        
+    private void shootGun(BlockHitResult hit, PlayerEntity player) {
+        CompoundTag hitTag = new CompoundTag();
+        putMarkerDirect(hitTag, hit, player.getHorizontalFacing());
+        McRemoteProcedureCall.tellServerToInvoke(
+            "com.jemnetworks.portalgun.PortalGunItemRemoteCallable.shootGun",
+            hitTag
+        );
     }
 
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
         MinecraftClient client = MinecraftClient.getInstance();
         ItemStack thisGun = playerEntity.getStackInHand(hand);
-        if (!thisGun.hasTag())
-            newGun(thisGun, world, playerEntity);
 
         HitResult hit = client.crosshairTarget;
         if (hit.getType() != Type.BLOCK) { // We didn't actually hit a block
@@ -173,7 +214,7 @@ public class PortalGunItem extends Item {
         // System.out.println(blockHit.getBlockPos());
         // System.out.println(blockHit.getSide());
         // System.out.println(playerEntity.getHorizontalFacing());
-        shootGun(thisGun.getTag(), blockHit, playerEntity);
+        shootGun(blockHit, playerEntity);
 
         return TypedActionResult.success(thisGun);
     }
