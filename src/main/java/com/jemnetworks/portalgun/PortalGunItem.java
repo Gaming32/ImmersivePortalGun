@@ -1,6 +1,7 @@
 package com.jemnetworks.portalgun;
 
 import com.qouteall.immersive_portals.network.McRemoteProcedureCall;
+import com.qouteall.immersive_portals.portal.Portal;
 
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.minecraft.client.MinecraftClient;
@@ -16,6 +17,8 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.hit.HitResult.Type;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Quaternion;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class PortalGunItem extends Item {
@@ -150,8 +153,88 @@ public class PortalGunItem extends Item {
         player.sendMessage(new TranslatableText("item.portal_gun.portal_gun.portals_reset"), true);
     }
 
-    private void createPortal(CompoundTag gun, Marker portal1, Marker portal2, Direction playerDirection) {
+    // private Vec3d getOffset(BlockPos position, Direction direction) {
+    //     switch (direction) {
+    //         case UP:
+    //             return new Vec3d(0.5, 1, 0.5);
+    //         case DOWN:
+    //             return new Vec3d(0.5, 0, 0.5);
+    //         case NORTH:
+    //             return new Vec3d(0.5, 0.5, 1);
+    //         case SOUTH:
+    //             return new Vec3d(0.5, 0.5, 0);
+    //         case EAST:
+    //             return new Vec3d()
+    //     }
+    // }
+
+    // private Vec3d[] getRotation
+
+    private Portal createPortal(CompoundTag gun, World world, Marker portalPos) {
+        if (portalPos.side == Direction.DOWN || portalPos.side == Direction.UP) return null;
+        Portal portal = Portal.entityType.create(world);
+        Vec3d unitVec = new Vec3d(portalPos.side.getUnitVector());
+        portal.setOriginPos(Vec3d.ofCenter(portalPos.position).add(unitVec.multiply(0.5001).subtract(new Vec3d(0, 0.5, 0))));
+        portal.setDestinationDimension(world.getRegistryKey());
+        portal.setOrientationAndSize(unitVec.rotateY((float)(0.5*Math.PI)), new Vec3d(0, 1, 0), 1, 2);
+        return portal;
+    }
+
+    private float getAngle(Direction dir) {
+        switch (dir) {
+            case NORTH:
+                return 90;
+            case SOUTH:
+                return -90;
+            case EAST:
+                return 90;
+            case WEST:
+                return -90;
+            default:
+                return 0;
+        }
+    }
+
+    private Direction portalFacing(Vec3d axisW) {
+        return Direction.fromVector((int)axisW.x, 0, (int)axisW.z);
+    }
+
+    private void updatePortal(Portal portal, Portal other) {
+        portal.setDestinationDimension(other.getOriginDim());
+        portal.setDestination(other.getOriginPos());
+        // System.out.println(portal.axisH.());
+        Direction portalFacing = portalFacing(portal.axisW);
+        Direction otherFacing = portalFacing(other.axisW);
+        float angle = getAngle(portalFacing) + getAngle(otherFacing);
+        if (portalFacing != otherFacing && portalFacing != otherFacing.getOpposite()) {
+            if ((portalFacing == Direction.SOUTH && otherFacing == Direction.WEST) ||
+                (portalFacing == Direction.NORTH && otherFacing == Direction.EAST))
+                angle += portalFacing.getHorizontal() * 90 - otherFacing.getHorizontal() * 90;
+            else
+                angle += otherFacing.getHorizontal() * 90 - portalFacing.getHorizontal() * 90;
+        }
         
+        portal.setRotationTransformation(new Quaternion(0, angle, 0, true));
+        portal.world.spawnEntity(portal);
+    }
+
+    private void createPortals(CompoundTag gun, World world, Marker portal1Pos, Marker portal2Pos) {
+        System.out.println("New portal! From:" + portal1Pos + " To:" + portal2Pos);
+        Portal portal1 = createPortal(gun, world, portal1Pos);
+        if (portal1 == null) return;
+        Portal portal2 = createPortal(gun, world, portal2Pos);
+        if (portal2 == null) return;
+        updatePortal(portal1, portal2);
+        updatePortal(portal2, portal1);
+        // if (portal1Pos.side == Direction.DOWN || portal1Pos.side == Direction.UP) return;
+        // if (portal2Pos.side == Direction.DOWN || portal2Pos.side == Direction.UP) return;
+        // Portal portal1 = Portal.entityType.create(world);
+        // Vec3d unitVec = new Vec3d(portal1Pos.side.getUnitVector());
+        // portal1.setOriginPos(Vec3d.ofCenter(portal1Pos.position).add(unitVec.multiply(0.5001).subtract(new Vec3d(0, 0.5, 0))));
+        // portal1.setDestinationDimension(World.NETHER);
+        // portal1.setDestination(Vec3d.ofCenter(portal1Pos.position).multiply(1/8));
+        // portal1.setOrientationAndSize(unitVec.rotateY((float)(0.5*Math.PI)), new Vec3d(0, 1, 0), 1, 2);
+        // portal1.world.spawnEntity(portal1);
     }
 
     public void inShootGun(ServerPlayerEntity player, Marker hit) {
@@ -163,7 +246,6 @@ public class PortalGunItem extends Item {
         if (!gunItem.hasTag())
             newGun(gunItem, player);
         CompoundTag gun = gunItem.getTag();
-        Direction playerDirection = player.getHorizontalFacing();
         boolean color = gun.getBoolean("color");
         switch (gun.getByte("state")) {
             case (byte)0:
@@ -178,7 +260,7 @@ public class PortalGunItem extends Item {
                     putMarker(gun, "marker", hit);
                 }
                 else {
-                    createPortal(gun, hit, getMarker(gun, "marker"), playerDirection);
+                    createPortals(gun, player.world, hit, getMarker(gun, "marker"));
                     gun.putByte("state", (byte)2);
                 }
                 break;
